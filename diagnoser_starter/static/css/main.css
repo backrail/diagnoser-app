@@ -1,0 +1,599 @@
+/* ===== Nocturne Theme ++ ===== */
+:root{
+  --bg: #090816;
+  --bg2:#0e0b22;
+  --card:#12102a;
+  --line: rgba(255,255,255,.10);
+  --text:#ece9ff;
+  --text-muted:#a7a2c9;
+
+  --primary:#9b8cff;
+  --primary-strong:#5f46ff;
+  --magenta:#ff5bb4;
+  --ok:#66e0b8; --warn:#ffd166; --danger:#ff6b8a;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.35);
+  --shadow-md: 0 16px 40px rgba(22, 15, 64, .55);
+  --radius: 16px; --radius-sm:12px; --radius-lg:22px;
+
+  --fs-1: clamp(24px, 3.2vw, 34px);
+  --fs-2: clamp(18px, 2.2vw, 22px);
+  --fs-3: clamp(16px, 2.0vw, 18px);
+  --fs-4: 14px;
+
+  --card-surface: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
+  --card-stroke:  rgba(255,255,255,.10);
+  --card-glow-a:  rgba(255,91,180,.22);  /* 上側の淡いグロー */
+  --card-glow-b:  rgba(155,140,255,.20); /* 下側の淡いグロー */
+
+  --site-header-height: 64px;
+}
+
+*{ box-sizing: border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "BIZ UDPGothic", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  position: relative;
+}
+
+/* 深いベース＋妖艶なベール＋ノイズ */
+body.theme-nocturne::before{
+  content:"";
+  position:fixed; inset:-15% -15% -15% -15%; z-index:-2; pointer-events:none;
+  background:
+    radial-gradient(1200px 700px at 6% -8%, rgba(125, 70, 255, .25) 0%, transparent 55%),
+    radial-gradient(900px 600px at 95% 12%, rgba(255, 80, 170, .22) 0%, transparent 50%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+  filter: saturate(110%);
+}
+body.theme-nocturne::after{
+  content:"";
+  position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background-image:url("data:image/svg+xml;utf8,\
+  <svg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'>\
+   <filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter>\
+   <rect width='140' height='140' filter='url(%23n)' opacity='0.045'/>\
+  </svg>");
+  opacity:.8;
+}
+
+.container{
+  width: 100%;
+  max-width: 1100px;    /* PC画面での最大幅。好みで調整 */
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* Header */
+.site-header{
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--site-header-height); /* height: 64px; を変数に変更（可読性のため） */
+  z-index: 200;
+  background: var(--bg);       /* 背景を付けて下のコンテンツと区切る */
+  border-bottom: 1px solid var(--line);
+}
+
+.site-header .container{ 
+  display:flex; 
+  align-items:center; 
+  gap:16px; 
+  height: 100%; /* <--- **この行を追加/修正します！** */
+}
+
+.site-header .brand{
+  display:inline-block; padding:10px 14px; border-radius: var(--radius-sm);
+  font-weight:800; letter-spacing:.3px; text-decoration:none; color:var(--text);
+  background:
+    linear-gradient(135deg, rgba(255,91,180,.18), rgba(255,91,180,0) 60%),
+    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+}
+.brand-accent{ color: var(--magenta); font-weight:700; }
+.site-header nav a{
+  color: var(--text-muted); text-decoration: none; padding:10px 12px; border-radius: 10px;
+  transition: color .2s, background .2s, transform .12s;
+}
+.site-header nav a:hover{ color: var(--text); background: rgba(255,255,255,.07); }
+.site-header nav a:active{ transform: translateY(1px) scale(.98); }
+
+/* Footer */
+.site-footer{ border-top:1px solid var(--line); margin-top:15px; }
+.site-footer .container{ display:flex; align-items:center; gap:12px; padding:10px 5px 10px; color:var(--text-muted); }
+.site-footer .sep{ flex:1; height:1px; background: var(--line); border-radius:1px; }
+
+/* Type */
+h1{ font-size:var(--fs-1); margin:.3rem 0 1rem; letter-spacing:.2px;
+  background: linear-gradient(90deg, #fff 0%, #e1d8ff 50%, #f7d2ef 100%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+h2{ font-size:var(--fs-2); margin:1.2rem 0 .6rem; }
+h3{ font-size:var(--fs-3); margin:1rem 0 .5rem; color: var(--text); }
+.muted{ color: var(--text-muted); }
+
+/* Grid & Card */
+.card-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 20px; }
+
+.card{
+  position:relative;
+  background: var(--card-surface);
+  border: 1px solid var(--card-stroke);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, filter .18s ease;
+  
+  min-height: 380px; /* ★ 修正: 画像あり/なしで揃うよう高さを調整（目安） ★ */
+}
+
+.card::after{
+  content:"";
+  position:absolute; inset:-1px; border-radius: inherit; pointer-events:none;
+  background:
+    radial-gradient(120% 80% at 90% -10%, var(--card-glow-a), transparent 60%),
+    radial-gradient(130% 90% at -10% 110%, var(--card-glow-b), transparent 60%);
+  opacity:.55; mix-blend-mode: screen; filter: blur(6px);
+}
+.card:hover{
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in oklab, var(--primary) 65%, white 0%);
+  filter: saturate(110%);
+}
+
+/* 2. 画像ラッパー（.thumb）の高さ固定 */
+.card .thumb{
+  margin-bottom: .75rem !important; /* HTMLのインラインスタイルを上書き */
+  height: 180px; /* ★ 追加/修正: 画像表示領域の高さを固定 ★ */
+  overflow: hidden; 
+  border-radius:16px; 
+  background: rgba(255,255,255,.03); /* 画像がない場合の代替背景色 */
+}
+
+.card .thumb img{
+  display:block; 
+  width:100%; 
+  height:100%; /* ラッパーの高さに合わせる */
+  max-height: none !important; /* HTMLのインラインスタイル（max-height:180px;）を無効化 */
+  object-fit: cover; 
+  border-radius:16px;
+}
+
+/* Buttons */
+a.btn, .btn{
+  display:inline-block; padding:.64rem 1.05rem; border-radius: 14px;
+  border:1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  color: var(--text); text-decoration:none; cursor:pointer;
+  transition: transform .12s ease, box-shadow .2s, border-color .2s, background .2s;
+  box-shadow: var(--shadow-sm);
+}
+.btn:hover{ border-color: rgba(255,255,255,.22); }
+.btn:active{ transform: translateY(1px); }
+.btn.primary{
+  background:
+    linear-gradient(180deg, var(--primary), var(--primary-strong)),
+    radial-gradient(500px 130px at 50% -25%, rgba(255,91,180,.28), transparent 70%);
+  border-color: rgba(255,255,255,.12); color:#fff;
+  box-shadow: 0 10px 26px rgba(95,76,255,.45);
+}
+.btn.danger{
+  background: linear-gradient(180deg, #ff7fa0, #ff5f87);
+  border-color: rgba(255,255,255,.1); color:#fff;
+  box-shadow: 0 8px 22px rgba(255,95,135,.38);
+}
+
+/* Forms */
+.form{
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.form.inline{ grid-auto-flow: column; align-items:end; gap:.6rem; }
+.form label{ display:grid; gap:.4rem; font-size:.96rem; color: var(--text-muted); }
+.form input[type="text"],
+.form input[type="password"],
+.form input[type="number"],
+.form input[type="url"],
+.form input[type="file"],
+.form textarea,
+.form select{
+  padding:.8rem .95rem; border:1px solid var(--line); border-radius:12px;
+  background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.015));
+  color: var(--text); outline:none;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+  transition: border-color .2s, box-shadow .2s, filter .2s;
+}
+.form input:focus, .form textarea:focus, .form select:focus{
+  border-color: rgba(155,140,255,.7);
+  box-shadow: 0 0 0 4px rgba(155,140,255,.18);
+}
+
+/* Flash */
+.flash-area{ margin:1rem 0; display:grid; gap:.6rem; }
+.flash{
+  border:1px solid var(--line);
+  border-left:6px solid var(--primary);
+  background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.02));
+  color:var(--text); padding:.75rem 1rem; border-radius:12px;
+}
+.flash.success{ border-left-color: var(--ok); }
+.flash.warning{ border-left-color: var(--warn); }
+.flash.danger{ border-left-color: var(--danger); }
+
+/* Question / Choice */
+.question{
+  margin:1rem 0; padding:16px; border:1px solid var(--line); border-radius:var(--radius);
+  background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+}
+.choice{
+  display:flex; align-items:center; gap:.6rem;
+  margin:.35rem 0; padding:.45rem .55rem; border-radius:10px;
+  transition: background .15s, transform .1s, box-shadow .15s;
+}
+.choice:hover{ background: rgba(255,255,255,.055); }
+
+/* ラジオ/チェックを同じ“○”に */
+input.radio-look, input.normal-radio{
+  -webkit-appearance:none; appearance:none; width:18px; height:18px;
+  border:2px solid rgba(255,255,255,.65); border-radius:50%;
+  display:inline-block; position:relative; outline:none; flex:0 0 auto; background:transparent;
+  transition: border-color .15s, box-shadow .15s, background-color .15s;
+}
+input.radio-look:focus-visible, input.normal-radio:focus-visible{
+  box-shadow:0 0 0 3px rgba(155,140,255,.35); border-color:#c5bbff;
+}
+input.radio-look:checked::after, input.normal-radio:checked::after{
+  content:""; position:absolute; inset:3px; border-radius:50%; background: var(--accent); 
+}
+label.choice:hover input.radio-look{ border-color: rgba(255,255,255,.92); }
+input.radio-look:disabled{ opacity:.5; cursor:not-allowed; }
+label.choice > span{ line-height:1.25; }
+
+/* Lists & Tables */
+.list{ background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)); border:1px solid var(--line); border-radius:var(--radius); padding:.8rem 1rem; }
+.table{
+  width:100%; border-collapse:separate; border-spacing:0;
+  background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+  border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+}
+.table th, .table td{ padding:.75rem 1rem; border-bottom:1px solid var(--line); }
+.table thead th{ background: rgba(255,255,255,.06); text-align:left; color: var(--text-muted); }
+.table tbody tr:hover{ background: rgba(255,255,255,.04); }
+
+hr{ border:0; border-top:1px solid var(--line); margin:1.3rem 0; }
+
+@media (max-width: 640px){
+  .form.inline{ grid-auto-flow: row; align-items:stretch; }
+}
+
+/* --- Custom Radio Styles --- */
+
+/* ❤ ハート */
+input.heart-radio {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+  outline: none;
+}
+input.heart-radio::before {
+  content: "❤";
+  font-size: 22px;
+  position: absolute;
+  top: 0; left: 0;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--magenta);
+  transition: color .2s ease;
+}
+input.heart-radio:checked::before {
+  color: var(--magenta);
+  text-shadow: 0 0 6px rgba(255,91,180,.6);
+}
+
+/* ⭐ 星 */
+input.star-radio {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+  outline: none;
+}
+input.star-radio::before {
+  content: "★";
+  font-size: 22px;
+  position: absolute;
+  top: 0; left: 0;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--primary);
+  transition: color .2s ease;
+}
+input.star-radio:checked::before {
+  color: var(--primary);
+  text-shadow: 0 0 6px rgba(155,140,255,.6);
+}
+
+/* ♦ ダイヤ */
+input.diamond-radio {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+  outline: none;
+}
+input.diamond-radio::before {
+  content: "♦";
+  font-size: 22px;
+  position: absolute;
+  top: 0; left: 0;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--accent);
+  transition: color .2s ease;
+}
+input.diamond-radio:checked::before {
+  color: var(--accent);
+  text-shadow: 0 0 6px rgba(255,209,102,.6);
+}
+
+.progress-fixed{
+  position: sticky;
+  top: calc(var(--site-header-height, 64px) + 10px); /* ヘッダーの下で止まる */
+  z-index: 150;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+  box-shadow: var(--shadow-sm), 0 8px 28px rgba(20,18,40,.35);
+  backdrop-filter: blur(8px) saturate(120%);
+}
+
+.progress-bar{
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+}
+
+.progress-fill{
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--magenta), var(--primary));
+  box-shadow: 0 0 12px rgba(224,84,168,.35);
+  transition: width .25s ease;
+}
+
+.progress-text{
+  min-width: 88px;
+  text-align: right;
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
+/* Inline edit rows for results */
+.result-edit.is-hidden { display: none; }
+.result-row:hover { background: rgba(255,255,255,.04); }
+
+/* 結果編集行のレイアウトを安定化 */
+.result-edit-grid{
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 160px 160px auto; /* タイトル / 最小 / 最大 / ボタン */
+  gap: 12px;
+  align-items: end;
+}
+
+.result-edit-grid input,
+.result-edit-grid textarea,
+.result-edit-grid select{
+  width: 100%;
+}
+
+.result-edit-grid .btn{
+  white-space: nowrap;          /* ボタンが折れて幅を広げない */
+}
+
+/* 狭い画面では縦積み */
+@media (max-width: 900px){
+  .result-edit-grid{
+    grid-template-columns: 1fr; /* 1列に */
+  }
+  .result-edit-grid > div,
+  .result-edit-grid > label{
+    width: 100%;
+  }
+  .result-edit-grid .btn{
+    width: auto;
+  }
+}
+
+/* ===== Theme Colors (5 variants) ===========================================
+   仕組み：
+   - 既存の配色は var(--primary), --magenta を参照している
+   - <html data-theme="..."> に応じてそれらを上書き
+=========================================================================== */
+
+/* 1) デフォルト（violet） */
+:root,[data-theme="violet"]{
+  --primary:        #9b8cff;
+  --primary-strong: #5f46ff;
+  --magenta:        #ff5bb4;
+  --accent: var(--primary); 
+}
+
+/* 2) rose（妖艶ピンク寄せ） */
+[data-theme="rose"]{
+  --primary:        #ff6aa6;
+  --primary-strong: #ff3e8a;
+  --magenta:        #ff7ab8;
+  --accent: var(--primary); 
+}
+
+/* 3) emerald（深緑×青） */
+[data-theme="emerald"]{
+  --primary:        #3ad5b0;
+  --primary-strong: #19b89b;
+  --magenta:        #59f0c9;
+  --accent: var(--primary); 
+}
+
+/* 4) amber（琥珀） */
+[data-theme="amber"]{
+  --primary:        #ffc350;
+  --primary-strong: #ffac26;
+  --magenta:        #ffd98a;
+  --accent: var(--primary); 
+}
+
+/* 5) cyan（サイバー青） */
+[data-theme="cyan"]{
+  --primary:        #64d6ff;
+  --primary-strong: #2fb7ec;
+  --magenta:        #7fe6ff;
+  --accent: var(--primary); 
+}
+
+/* ▼ フッター右のテーマドット */
+.theme-dots{
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.theme-dot{
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  box-shadow: 0 0 10px rgba(255,255,255,.08) inset, 0 2px 6px rgba(0,0,0,.3);
+  cursor: pointer;
+  display: inline-block;
+  padding: 0;
+  background: #fff;
+  transition: transform .12s ease, box-shadow .2s, border-color .2s;
+}
+.theme-dot:focus{ outline: none; box-shadow: 0 0 0 3px rgba(255,255,255,.18); }
+.theme-dot:hover{ transform: translateY(-1px); }
+
+/* ドットの色（視覚わかりやすく実色を指定） */
+.t-violet  { background: linear-gradient(180deg,#b8aaff,#7b5cff); }
+.t-rose    { background: linear-gradient(180deg,#ff9ac6,#ff4f9a); }
+.t-emerald { background: linear-gradient(180deg,#55e8c8,#18b692); }
+.t-amber   { background: linear-gradient(180deg,#ffd98a,#ffae2a); }
+.t-cyan    { background: linear-gradient(180deg,#8de7ff,#39baf0); }
+
+/* ===== Stick footer to bottom (page-level layout) ===== */
+html, body { height: 100%; }
+body{
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.site-header{ flex-shrink: 0; }
+main.container{ 
+  flex: 1 0 auto; 
+  padding-top: calc(var(--site-header-height) + 15px); 
+}
+
+/* フッターをコンパクトに */
+.site-footer{
+  flex-shrink: 0;
+  border-top: 1px solid var(--line);
+  margin-top: 10px;   /* 上の余白を控えめに */
+}
+.site-footer .container{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;  /* 高さを小さめに */
+  font-size: .8rem;
+}
+
+/* ラジオボタンとラベル文字を縦中央揃えにする */
+fieldset.form label{
+  display: flex;
+  align-items: center;
+  gap: .5rem;         /* ボタンと文字の間隔 */
+  line-height: 1.4;   /* 読みやすさ用 */
+}
+
+fieldset.form input[type="radio"]{
+  margin: 0;          /* デフォルトの縦位置ずれをリセット */
+  flex-shrink: 0;     /* 小さくならないように固定 */
+}
+
+/* セレクトボックスのドロップダウン内テキストを見えるようにする */
+select, option {
+  color: var(--text);                 /* 共通の文字色を適用 */
+  background-color: var(--bg);        /* 背景もテーマ色に揃える */
+}
+
+/* hover 時の背景 */
+option:hover, option:focus {
+  background-color: var(--primary);   /* テーマの強調色 */
+  color: #fff;                        /* 文字は白で反転 */
+}
+
+/* --- Card Fixed Footer for Button Positioning --- */
+
+/* 新しく追加するCSSブロックです */
+.card-fixed-footer{
+  position: absolute;  /* 親の .card を基準に位置を決定する */
+  bottom: 18px;        /* カードの下端から 18px 離す（カードのパディングと同じ分） */
+  left: 18px;          /* カードの左端から 18px 離す（カードのパディングと同じ分） */
+  z-index: 10;         /* 他のコンテンツの上に確実に表示させるための設定 */
+}
+
+/* カード内のボタンに、余計な余白（margin）がつかないようにリセットします */
+.card .btn{
+  margin: 0;
+}
+
+/* main.css に追加するべきコード */
+.card-description {
+  /* ボタンの重なりを防ぐために余白を広げます */
+  margin-bottom: 4rem; 
+  
+  /* 互換性のある行数制限 */
+  line-clamp: 3;             
+  -webkit-line-clamp: 3;   
+  
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Card Fixed Footer for Button Positioning --- */
+.card-fixed-footer{
+  position: absolute;
+  bottom: 18px;
+  left: 18px;
+  z-index: 10;
+}
+
+.card .btn{
+  margin: 0;
+}

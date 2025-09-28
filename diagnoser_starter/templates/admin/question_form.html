@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}質問編集{% endblock %}
+{% block content %}
+<h1>質問編集（1行選択肢UI・削除ボタン右寄せ）</h1>
+
+<section class="question">
+  <form method="post" class="form" style="margin:0">
+    <label>質問文
+      <input type="text" name="text" value="{{ q.text }}" required>
+    </label>
+
+    <label style="display:flex; gap:.5rem; align-items:center;">
+      <input type="checkbox" name="multiple" value="1" {% if q.multiple %}checked{% endif %}>
+      複数選択を許可（チェックでこの質問は複数回答可）
+    </label>
+
+    <div class="actions">
+      <button class="btn primary" type="submit">質問を保存</button>
+      <a class="btn" href="{{ url_for('admin.questions', quiz_id=q.quiz_id) }}">一覧へ戻る</a>
+    </div>
+  </form>
+</section>
+
+
+<h2>選択肢</h2>
+
+<form method="post" action="{{ url_for('admin.choice_new', question_id=q.id) }}" class="form inline">
+  <label>新しい選択肢
+    <input type="text" name="text" placeholder="例：友達と出かける" required>
+  </label>
+  <label>合計スコア（±）
+    <input type="number" name="sum_points" value="0" style="max-width:100px">
+  </label>
+  <button class="btn" type="submit">追加</button>
+</form>
+
+<div style="margin-top:.75rem">
+  {% for ch in q.choices %}
+    <section class="question" style="padding:.6rem .8rem">
+      <div style="display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; margin:0">
+        <form method="post" action="{{ url_for('admin.choice_score_update', choice_id=ch.id) }}" style="display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; margin:0; flex-grow:1;">
+          <input type="radio" disabled>
+          <input type="text" name="text" value="{{ ch.text }}" required style="flex:1 1 20px; min-width:150px">
+          <input type="number" name="sum_points" value="{{ ch.sum_points or 0 }}" style="width:80px" aria-label="合計スコア">
+          <button class="btn" type="submit">保存</button>
+        </form>
+        <form method="post" action="{{ url_for('admin.choice_delete', choice_id=ch.id) }}" style="display:inline">
+          <button class="btn danger" type="submit" onclick="return confirm('この選択肢を削除しますか？')">削除</button>
+        </form>
+      </div>
+    </section>
+  {% else %}
+    <p class="muted">選択肢がありません。上のフォームから追加してください。</p>
+  {% endfor %}
+</div>
+{% endblock %}

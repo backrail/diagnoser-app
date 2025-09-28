@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}質問管理{% endblock %}
+{% block content %}
+<h1>質問管理 - {{ quiz.title }}</h1>
+<form method="post" class="form">
+  <label>質問文
+    <input type="text" name="text" required>
+  </label>
+  <button class="btn" type="submit">追加（末尾）</button>
+</form>
+
+<table class="table">
+  <thead>
+    <tr><th>No</th><th>質問</th><th style="width:180px">入れ替え</th><th>操作</th></tr>
+  </thead>
+  <tbody>
+  {% for q in quiz.questions|sort(attribute='order') %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ q.text }}</td>
+      <td>
+        <form method="post" action="{{ url_for('admin.question_move', question_id=q.id, direction='up') }}" style="display:inline">
+          <button class="btn" type="submit">↑</button>
+        </form>
+        <form method="post" action="{{ url_for('admin.question_move', question_id=q.id, direction='down') }}" style="display:inline">
+          <button class="btn" type="submit">↓</button>
+        </form>
+      </td>
+      <td>
+        <a class="btn" href="{{ url_for('admin.question_edit', question_id=q.id) }}">編集</a>
+        <form method="post" action="{{ url_for('admin.question_delete', question_id=q.id) }}" style="display:inline">
+          <button class="btn danger" type="submit" onclick="return confirm('削除しますか？')">削除</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

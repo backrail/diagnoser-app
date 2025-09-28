@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} - 診断{% endblock %}
+{% block content %}
+  <!-- 診断タイトルと説明文は進捗バーより上に -->
+  <h1 class="page-title">{{ quiz.title }}</h1>
+  <p class="muted">{{ quiz.description }}</p>
+
+<div id="progress-wrap"
+     class="progress-fixed"  data-total="{{ questions|length }}">
+  <div class="progress-bar">
+    <div class="progress-fill" style="width:0%"></div>
+  </div>
+  <div class="progress-text">0 / {{ questions|length }}</div>
+</div>
+
+<form method="post" action="{{ url_for('public.quiz_result', quiz_id=quiz.id) }}">
+  {% for q in questions %}
+    <section class="question" data-question>
+      <h3>
+        Q{{ loop.index }}. {{ q.text }}
+        {% if q.multiple %}<small class="muted" style="font-weight:normal">（複数選択可）</small>{% endif %}
+      </h3>
+
+      <div class="choices">
+        {% for ch in (q._shuffled_choices if q._shuffled_choices is defined else q.choices) %}
+          <label class="choice" style="display:flex; align-items:center; gap:.6rem; cursor:pointer;">
+            {% if q.multiple %}
+              <input
+                type="checkbox"
+                class="{{ 'radio-look' if quiz.choice_style == 'normal' else quiz.choice_style ~ '-radio' }}"
+                name="q-{{ q.id }}"
+                value="{{ ch.id }}"
+              >
+            {% else %}
+              <input
+                type="radio"
+                class="{{ 'radio-look' if quiz.choice_style == 'normal' else quiz.choice_style ~ '-radio' }}"
+                name="q-{{ q.id }}"
+                value="{{ ch.id }}"
+                required
+              >
+            {% endif %}
+            <span>{{ ch.text }}</span>
+          </label>
+        {% else %}
+          <p class="muted">選択肢が未設定です（管理から追加してください）。</p>
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+
+  <div class="actions" style="position:sticky; bottom:8px; padding-top:8px;">
+    <button class="btn primary" type="submit">診断する</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/quiz_progress.js') }}?v=2"></script>
+{% endblock %}

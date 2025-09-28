@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}診断の基本設定{% endblock %}
+{% block content %}
+<h1>診断の基本設定</h1>
+
+<!-- ファイルアップロードに対応させるため enctype を追加 -->
+<form method="post" class="form" enctype="multipart/form-data">
+  <label>タイトル
+    <input type="text" name="title" value="{{ quiz.title if quiz else '' }}" required>
+  </label>
+
+  <label>説明
+    <textarea name="description" rows="4">{{ quiz.description if quiz else '' }}</textarea>
+  </label>
+
+  <!-- ★ 画像アップロード方式 -->
+  <label>画像アップロード（任意）
+    <input type="file" name="image_file" accept="image/*">
+    <span class="muted" style="display:block;font-size:.9rem;margin-top:.25rem;">
+      対応: png / jpg / jpeg / gif / webp（最大2MB）
+    </span>
+  </label>
+
+  {% if quiz and quiz.image_url %}
+  <div class="card" style="padding:8px">
+    <div class="muted" style="font-size:.9rem;margin-bottom:.25rem;">現在の画像</div>
+    <img src="{{ quiz.image_url }}" alt="preview" style="max-width:100%;border-radius:12px;">
+    <label style="display:block; margin-top:.5rem;">
+      <input type="checkbox" name="remove_image" value="1">
+      この画像を削除する
+    </label>
+  </div>
+  {% endif %}
+
+  {% if quiz %}
+  <fieldset class="form" style="border:1px solid var(--line); padding:12px; border-radius:12px">
+    <legend class="muted">表示方式（質問の順番）</legend>
+    <label><input type="radio" name="display_mode" value="ordered" {% if quiz.display_mode != 'random' %}checked{% endif %}> 管理の順番どおり</label>
+    <label><input type="radio" name="display_mode" value="random" {% if quiz.display_mode == 'random' %}checked{% endif %}> ランダム表示（アクセス毎にシャッフル）</label>
+  </fieldset>
+
+  <!-- 選択肢の表示順設定 -->
+  <fieldset class="form" style="border:1px solid var(--line); padding:12px; border-radius:12px; margin-top:1rem">
+    <legend class="muted">選択肢の表示順</legend>
+    <label><input type="radio" name="choice_mode" value="ordered" {% if quiz.choice_mode != 'random' %}checked{% endif %}> 管理の順番どおり</label>
+    <label><input type="radio" name="choice_mode" value="random" {% if quiz.choice_mode == 'random' %}checked{% endif %}> ランダム表示（アクセス毎にシャッフル）</label>
+  </fieldset>
+
+  <!-- ★追加：ラジオボタンのデザイン選択 -->
+  <fieldset class="form" style="border:1px solid var(--line); padding:12px; border-radius:12px; margin-top:1rem">
+    <legend class="muted">ラジオボタンのデザイン</legend>
+    <label>
+      <select name="choice_style">
+        <option value="normal"  {% if quiz.choice_style == 'normal' %}selected{% endif %}>ノーマル（丸）</option>
+        <option value="heart"   {% if quiz.choice_style == 'heart' %}selected{% endif %}>ハート（❤）</option>
+        <option value="star"    {% if quiz.choice_style == 'star' %}selected{% endif %}>星（⭐）</option>
+        <option value="diamond" {% if quiz.choice_style == 'diamond' %}selected{% endif %}>ダイヤ（♦）</option>
+      </select>
+    </label>
+  </fieldset>
+  {% endif %}
+
+  <button class="btn primary" type="submit">保存</button>
+</form>
+
+{% if quiz %}
+<hr>
+<p>
+  <a class="btn" href="{{ url_for('admin.questions', quiz_id=quiz.id) }}">質問を編集</a>
+  <a class="btn" href="{{ url_for('admin.results', quiz_id=quiz.id) }}">結果を編集</a>
+</p>
+{% endif %}
+{% endblock %}

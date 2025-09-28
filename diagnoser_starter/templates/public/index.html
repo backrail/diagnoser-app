@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}診断をえらぶ - 診断アプリ{% endblock %}
+{% block content %}
+<h1>診断をえらぶ</h1>
+
+<div class="card-grid">
+{% for qz in quizzes %}
+  <div class="card">
+    
+    <div class="thumb" style="margin-bottom:.75rem">
+    {% if qz.image_url %}
+      <img src="{{ qz.image_url }}" alt="{{ qz.title }}"
+           style="width:100%;max-height:180px;object-fit:cover;border-radius:16px;">
+    {% else %}
+      {% endif %}
+    </div>
+    <h3>{{ qz.title }}</h3>
+    
+    <p class="card-description">{{ qz.description }}</p>
+    
+    <div class="card-fixed-footer">
+      <a class="btn" href="{{ url_for('public.quiz_start', quiz_id=qz.id) }}">はじめる</a>
+    </div>
+  </div>
+{% else %}
+  <p>まだ診断がありません。管理ページから作成してください。</p>
+{% endfor %}
+</div>
+{% endblock %}

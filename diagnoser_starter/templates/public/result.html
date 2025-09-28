@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}結果 - {{ quiz.title }}{% endblock %}
+{% block content %}
+<h1>診断結果</h1>
+<div class="card">
+  <h2>{{ result.title }}</h2>
+  <p class="muted">合計スコア：{{ total }}</p>
+  <p>{{ result.description }}</p>
+</div>
+
+<a class="btn" href="{{ url_for('public.quiz_start', quiz_id=quiz.id) }}">もういちど</a>
+<a class="btn" href="{{ url_for('public.index') }}">他の診断へ</a>
+{% endblock %}

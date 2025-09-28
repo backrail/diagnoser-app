@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Traits 管理{% endblock %}
+{% block content %}
+<h1>Traits 管理 - {{ quiz.title }}</h1>
+<form method="post" class="form inline">
+  <label>key <input type="text" name="key" required></label>
+  <label>表示名 <input type="text" name="name" required></label>
+  <button class="btn" type="submit">追加</button>
+</form>
+
+<table class="table">
+  <thead><tr><th>ID</th><th>key</th><th>name</th><th></th></tr></thead>
+  <tbody>
+  {% for tr in quiz.traits %}
+    <tr>
+      <td>{{ tr.id }}</td><td>{{ tr.key }}</td><td>{{ tr.name }}</td>
+      <td>
+        <form method="post" action="{{ url_for('admin.trait_delete', trait_id=tr.id) }}">
+          <button class="btn danger" type="submit" onclick="return confirm('削除しますか？')">削除</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

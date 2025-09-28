@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: diagnoser-app
+    env: python
+    buildCommand: pip install -r requirements_deploy.txt
+    startCommand: gunicorn diagnoser_starter.app:app --bind 0.0.0.0:8000 --workers 2
+    envVars:
+      - key: BLOG_PARENT_ORIGINS
+        value: "https://kaeruhakaeru.com/"
+      - key: SECRET_KEY
+        generateValue: true
+    plan: free

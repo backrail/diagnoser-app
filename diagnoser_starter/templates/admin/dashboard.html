@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}管理ダッシュボード{% endblock %}
+{% block content %}
+<h1>管理</h1>
+<p>
+  <a class="btn" href="{{ url_for('admin.quiz_new') }}">新しい診断を作る</a>
+  　
+  <a class="btn" href="{{ url_for('admin.logout') }}">ログアウト</a>
+</p>
+
+<table class="table">
+  <thead>
+    <tr><th>ID</th><th>タイトル</th><th>操作</th></tr>
+  </thead>
+  <tbody>
+  {% for qz in quizzes %}
+    <tr>
+      <td>{{ qz.id }}</td>
+      <td>{{ qz.title }}</td>
+      <td>
+        <a class="btn" href="{{ url_for('admin.quiz_edit', quiz_id=qz.id) }}">基本</a>
+        <!-- Traits は未実装なので削除 -->
+        <a class="btn" href="{{ url_for('admin.questions', quiz_id=qz.id) }}">質問</a>
+        <a class="btn" href="{{ url_for('admin.results', quiz_id=qz.id) }}">結果</a>
+
+        <!-- ▼ 追加：削除（POST） -->
+        <form method="post"
+              action="{{ url_for('admin.quiz_delete', quiz_id=qz.id) }}"
+              style="display:inline"
+              onsubmit="return confirm('本当に削除しますか？');">
+          <button class="btn danger" type="submit">削除</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="3">診断がまだありません。</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

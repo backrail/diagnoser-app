@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}結果を編集 - {{ quiz.title }}{% endblock %}
+{% block content %}
+<h1>結果を編集</h1>
+<p class="muted">{{ quiz.title }}</p>
+
+<!-- 新規追加フォーム -->
+<form class="form inline" method="post" action="{{ url_for('admin.results', quiz_id=quiz.id) }}">
+  <label>タイトル
+    <input type="text" name="title" placeholder="例：採用">
+  </label>
+  <label>最小 total（含む）
+    <input type="number" name="min_total" placeholder="空欄可">
+  </label>
+  <label>最大 total（含む）
+    <input type="number" name="max_total" placeholder="空欄可">
+  </label>
+  <button class="btn primary" type="submit">追加</button>
+</form>
+
+<div class="table" style="margin-top: 16px;">
+  <table style="width:100%; border-spacing:0; border-collapse:separate;">
+    <thead>
+      <tr>
+        <th style="width:70px;">ID</th>
+        <th>タイトル</th>
+        <th style="width:220px;">レンジ</th>
+        <th style="width:160px;">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in quiz.results %}
+      {# 表示行（クリックで編集行を開閉） #}
+      <tr class="result-row" data-id="{{ r.id }}" style="cursor:pointer;">
+        <td>{{ r.id }}</td>
+        <td>{{ r.title }}</td>
+        <td>
+          {% set mi = r.min_total if r.min_total is not none else -9999 %}
+          {% set ma = r.max_total if r.max_total is not none else 9999 %}
+          {{ mi }} 〜 {{ ma }}
+        </td>
+        <td>
+          <form method="post"
+                action="{{ url_for('admin.result_delete', result_id=r.id) }}"
+                onsubmit="event.stopPropagation(); return confirm('本当に削除しますか？');"
+                style="display:inline">
+            <button type="submit" class="btn danger">削除</button>
+          </form>
+        </td>
+      </tr>
+
+      {# 編集行（初期は非表示） #}
+      <tr id="edit-{{ r.id }}" class="result-edit is-hidden">
+        <td colspan="4" style="padding:0; border:0;">
+          <div class="card" style="margin:8px 8px 16px;">
+            <form class="form" method="post" action="{{ url_for('admin.result_update', result_id=r.id) }}"
+                  onsubmit="event.stopPropagation();">
+              <div class="result-edit-grid">
+                <label>タイトル
+                  <input type="text" name="title" value="{{ r.title }}" required>
+                </label>
+                <label>最小 total（含む）
+                  <input type="number" name="min_total" value="{{ r.min_total if r.min_total is not none }}">
+                </label>
+                <label>最大 total（含む）
+                  <input type="number" name="max_total" value="{{ r.max_total if r.max_total is not none }}">
+                </label>
+                <div style="display:flex; gap:8px;">
+                  <button class="btn primary" type="submit">保存</button>
+                  <button class="btn" type="button"
+                          onclick="toggleEditRow('{{ r.id }}')">閉じる</button>
+                </div>
+              </div>
+
+              <label>説明
+                <textarea name="description" rows="3">{{ r.description or '' }}</textarea>
+              </label>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="4" class="muted">まだ結果がありません。上のフォームから追加してください。</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p style="margin-top:16px;">
+  <a class="btn" href="{{ url_for('admin.quiz_edit', quiz_id=quiz.id) }}">診断の基本設定に戻る</a>
+  <a class="btn" href="{{ url_for('admin.questions', quiz_id=quiz.id) }}">質問を編集</a>
+</p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleEditRow(id){
+    const row = document.getElementById("edit-" + id);
+    if (row) row.classList.toggle("is-hidden");
+  }
+  // 表示行クリックで該当編集行を開閉
+  document.querySelectorAll(".result-row").forEach(tr => {
+    tr.addEventListener("click", () => {
+      const id = tr.dataset.id;
+      toggleEditRow(id);
+    });
+  });
+  // 削除ボタンクリックが行クリックに伝播しないように（行が開かないように）
+  document.querySelectorAll(".result-row form").forEach(f => {
+    f.addEventListener("click", (e) => e.stopPropagation());
+  });
+</script>
+{% endblock %}
