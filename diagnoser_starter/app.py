@@ -32,7 +32,6 @@ def create_app() -> Flask:
     if origins:
         @app.after_request
         def add_embed_headers(resp):
-            # 既存CSPと併用したい場合は結合処理に調整してください
             resp.headers["Content-Security-Policy"] = "frame-ancestors " + " ".join(origins)
             return resp
 
@@ -40,19 +39,39 @@ def create_app() -> Flask:
     app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp)
 
-    # --- 初回起動時：DBが空ならデモを自動投入（無料プランで Shell 使えない対策）---
+    # --- 初回起動時：DB初期化＋管理ユーザー＆デモ投入 ---
     with app.app_context():
-        from models import Quiz  # 遅延 import（循環回避）
-        from seed import seed_demo  # 無難なデモ（カエル雑学ライト 8問）
-
         try:
-            if Quiz.query.count() == 0:
+            from models import Quiz, User
+            from seed import seed_demo
+            from werkzeug.security import generate_password_hash
+
+            # 1) テーブルを作成
+            db.create_all()
+
+            # 2) 管理ユーザーがいなければ自動作成
+            admin_user = os.getenv("ADMIN_USERNAME", "admin")
+            admin_pass = os.getenv("ADMIN_PASSWORD", "admin123")
+            if not User.query.filter_by(username=admin_user).first():
+                u = User(username=admin_user)
+                if hasattr(u, "set_password"):
+                    u.set_password(admin_pass)
+                else:
+                    u.password_hash = generate_password_hash(admin_pass)
+                db.session.add(u)
+                db.session.commit()
+                app.logger.info(f"[auto-seed] 管理ユーザー {admin_user} を作成しました")
+
+            # 3) デモ診断が無ければ投入
+            has_any = db.session.query(Quiz.id).limit(1).first()
+            if not has_any:
                 seed_demo()
+                app.logger.info("[auto-seed] デモ診断を投入しました")
+
         except Exception as e:
-            # 失敗してもアプリは起動させる（ログだけ残す）
             app.logger.warning(f"[auto-seed] skipped due to error: {e}")
 
-    # --- 便利CLI（任意）---
+    # --- 便利CLI ---
     @app.cli.command("seed_demo")
     def seed_demo_command() -> None:
         """無難なデモ診断データを投入"""
@@ -65,17 +84,7 @@ def create_app() -> Flask:
         from seed import seed_sm
         seed_sm()
 
-    with app.app_context():
-        try:
-            from models import Quiz        # 先にテーブル定義をロード
-            db.create_all()                # その後にテーブル作成（既存なら何もしない）
-
-            from seed import seed_demo
-            has_any = db.session.query(Quiz.id).limit(1).first()
-            if not has_any:
-                seed_demo()
-        except Exception as e:
-            app.logger.warning(f"[auto-seed] skipped due to error: {e}")
-
     return app
+
+
 app = create_app()
