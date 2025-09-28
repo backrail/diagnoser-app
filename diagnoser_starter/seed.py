@@ -320,13 +320,13 @@ def seed_demo(db_uri_print: bool = False) -> None:
           [("水と湿度", 3), ("高温", 0), ("強風", 0)])
 
     r_beginner = Result(quiz=quiz, title="入門カエラー",
-        body="これからカエルの世界へようこそ。基本をおさえれば、もっと観察が楽しくなります。",
+        description="これからカエルの世界へようこそ。基本をおさえれば、もっと観察が楽しくなります。",
         min_total=-9999, max_total=8)
     r_normal = Result(quiz=quiz, title="ふつうのカエラー",
-        body="身近な雑学はバッチリ。季節ごとの鳴き声や生態を調べると、さらに理解が深まります。",
+        description="身近な雑学はバッチリ。季節ごとの鳴き声や生態を調べると、さらに理解が深まります。",
         min_total=9, max_total=15)
     r_master = Result(quiz=quiz, title="上級カエラー",
-        body="観察力も知識も上級者。地域差や種ごとの特徴も押さえて、フィールドに出れば発見だらけ。",
+        description="観察力も知識も上級者。地域差や種ごとの特徴も押さえて、フィールドに出れば発見だらけ。",
         min_total=16, max_total=9999)
 
     db.session.add_all([r_beginner, r_normal, r_master])

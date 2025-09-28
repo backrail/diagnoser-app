@@ -68,7 +68,7 @@ def create_app() -> Flask:
     with app.app_context():
         try:
             from models import Quiz        # 先にテーブル定義をロード
-            db.create_all()                # モジュールトップでimport済みの db をそのまま使う
+            db.create_all()                # その後にテーブル作成（既存なら何もしない）
 
             from seed import seed_demo
             has_any = db.session.query(Quiz.id).limit(1).first()
