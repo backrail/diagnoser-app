@@ -65,14 +65,18 @@ def create_app() -> Flask:
         from seed import seed_sm
         seed_sm()
 
-    # app.py の create_app の最後あたり
-
     with app.app_context():
-        from models import Quiz
-        from seed import seed_demo
-        if Quiz.query.count() == 0:  # DBが空なら一度だけ投入
-            seed_demo()
+        try:
+            from extensions import db
+            from models import Quiz        # 先に models を import してテーブル定義をロード
+            db.create_all()                # その後に create_all()
 
+            from seed import seed_demo
+            has_any = db.session.query(Quiz.id).limit(1).first()
+            if not has_any:
+                seed_demo()
+        except Exception as e:
+            app.logger.warning(f"[auto-seed] skipped due to error: {e}")
 
     return app
 app = create_app()
