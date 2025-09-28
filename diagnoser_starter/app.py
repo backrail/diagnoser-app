@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import os
+import uuid
 from datetime import datetime
-from flask import Flask
+from flask import Flask, session
 from dotenv import load_dotenv
 
 from config import Config
@@ -28,28 +29,30 @@ def create_app() -> Flask:
     # --- iframe 埋め込み許可（ブログから使う用）---
     # 例: BLOG_PARENT_ORIGINS="https://kaeruhakaeru.com/"
     origins = os.getenv("BLOG_PARENT_ORIGINS", "").strip().split()
-
     if origins:
         @app.after_request
         def add_embed_headers(resp):
             resp.headers["Content-Security-Policy"] = "frame-ancestors " + " ".join(origins)
             return resp
 
+    # --- セッションIDを必ず発行 ---
+    @app.before_request
+    def ensure_session_id():
+        if "sid" not in session:
+            session["sid"] = str(uuid.uuid4())
+
     # --- Blueprints ---
     app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp)
 
-    # --- 初回起動時：DB初期化＋管理ユーザー＆デモ投入 ---
+    # --- 初回起動時：DB初期化＋管理ユーザー（全体用） ---
     with app.app_context():
         try:
-            from models import Quiz, User
-            from seed import seed_demo
+            from models import User
             from werkzeug.security import generate_password_hash
 
-            # 1) テーブルを作成
             db.create_all()
 
-            # 2) 管理ユーザーがいなければ自動作成
             admin_user = os.getenv("ADMIN_USERNAME", "admin")
             admin_pass = os.getenv("ADMIN_PASSWORD", "admin123")
             if not User.query.filter_by(username=admin_user).first():
@@ -62,12 +65,6 @@ def create_app() -> Flask:
                 db.session.commit()
                 app.logger.info(f"[auto-seed] 管理ユーザー {admin_user} を作成しました")
 
-            # 3) デモ診断が無ければ投入
-            has_any = db.session.query(Quiz.id).limit(1).first()
-            if not has_any:
-                seed_demo()
-                app.logger.info("[auto-seed] デモ診断を投入しました")
-
         except Exception as e:
             app.logger.warning(f"[auto-seed] skipped due to error: {e}")
 
@@ -75,14 +72,9 @@ def create_app() -> Flask:
     @app.cli.command("seed_demo")
     def seed_demo_command() -> None:
         """無難なデモ診断データを投入"""
-        from seed import seed_demo
-        seed_demo()
-
-    @app.cli.command("seed_sm")
-    def seed_sm_command() -> None:
-        """（旧）推し度診断のデモデータを投入"""
-        from seed import seed_sm
-        seed_sm()
+        from seed import seed_demo_for_session
+        # CLI ではセッションがないので仮IDで投入
+        seed_demo_for_session("cli-demo")
 
     return app
 

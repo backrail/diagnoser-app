@@ -15,6 +15,7 @@ from flask import (
     request,
     session,
     url_for,
+    abort,
 )
 from werkzeug.utils import secure_filename
 
@@ -24,7 +25,18 @@ from models import Choice, Question, Quiz, Result, Trait, User
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
-# ------------ 認証ユーティリティ ------------
+# ------------ 共通ユーティリティ ------------
+
+def current_sid() -> str:
+    """Flask セッションに付与された一意ID（app.py の before_request で発行）"""
+    sid = session.get("sid")
+    if not sid:
+        # 念のため保険（通常は app.before_request で必ず入る）
+        sid = session["sid"] = uuid.uuid4().hex
+    return sid
+
+
+# ------------ 認証ユーティリティ（既存のまま） ------------
 
 def is_logged_in() -> bool:
     return bool(session.get("admin_user_id"))
@@ -36,23 +48,19 @@ def login_required(func: Callable) -> Callable:
         if not is_logged_in():
             return redirect(url_for("admin.login"))
         return func(*args, **kwargs)
-
     return wrapper
 
 
 # ------------ アップロードユーティリティ ------------
 
 def _allowed_file(filename: str) -> bool:
-    """許可拡張子チェック（設定が無ければデフォルト集合を利用）"""
     allowed = current_app.config.get(
-        "ALLOWED_EXTENSIONS",
-        {"png", "jpg", "jpeg", "gif", "webp"},
+        "ALLOWED_EXTENSIONS", {"png", "jpg", "jpeg", "gif", "webp"}
     )
     return "." in filename and filename.rsplit(".", 1)[1].lower() in allowed
 
 
 def _save_upload(file_storage) -> str | None:
-    """ファイルを保存して /static/uploads/ 相対のURLを返す。失敗時 None。"""
     if not file_storage or not file_storage.filename:
         return None
     if not _allowed_file(file_storage.filename):
@@ -61,14 +69,12 @@ def _save_upload(file_storage) -> str | None:
     upload_dir = current_app.config["UPLOAD_FOLDER"]
     os.makedirs(upload_dir, exist_ok=True)
 
-    # 衝突回避のために uuid + 時刻 を付与
     base = secure_filename(file_storage.filename)
     name, ext = os.path.splitext(base)
     unique = f"{name}_{int(time.time())}_{uuid.uuid4().hex[:8]}{ext}"
     abs_path = os.path.join(upload_dir, unique)
     file_storage.save(abs_path)
 
-    # URL は /static/... で参照できるようにスラッシュで統一
     return f"/{abs_path.replace(os.sep, '/')}"
 
 
@@ -83,33 +89,36 @@ def login():
         if user and user.check_password(password):
             session["admin_user_id"] = user.id
             return redirect(url_for("admin.dashboard"))
-        flash("ログインに失敗しました。", "danger")
+        flash("ユーザー名またはパスワードが違います。", "danger")
     return render_template("admin/login.html")
 
 
 @bp.get("/logout")
 def logout():
-    session.clear()
+    # セッションのログイン情報のみ消す（sid は残す）
+    session.pop("admin_user_id", None)
     return redirect(url_for("admin.login"))
 
 
-# ------------ ダッシュボード ------------
+# ------------ ダッシュボード（セッションで分離） ------------
 
 @bp.get("/")
 @login_required
 def dashboard():
-    quizzes = Quiz.query.all()
+    sid = current_sid()
+    quizzes = Quiz.query.filter_by(session_id=sid).order_by(Quiz.id.asc()).all()
     return render_template("admin/dashboard.html", quizzes=quizzes)
 
 
 @bp.get("/", endpoint="index")
 @login_required
 def admin_index():
-    quizzes = Quiz.query.order_by(Quiz.id.asc()).all()
+    sid = current_sid()
+    quizzes = Quiz.query.filter_by(session_id=sid).order_by(Quiz.id.asc()).all()
     return render_template("admin/dashboard.html", quizzes=quizzes)
 
 
-# ------------ 診断 CRUD ------------
+# ------------ 診断 CRUD（セッションで分離） ------------
 
 @bp.route("/quiz/new", methods=["GET", "POST"])
 @login_required
@@ -120,17 +129,26 @@ def quiz_new():
         if not title:
             flash("タイトルは必須です。", "warning")
         else:
-            qz = Quiz(title=title, description=desc)
+            qz = Quiz(title=title, description=desc, session_id=current_sid())
             db.session.add(qz)
             db.session.commit()
             return redirect(url_for("admin.quiz_edit", quiz_id=qz.id))
     return render_template("admin/quiz_edit.html", quiz=None)
 
 
+def _get_own_quiz_or_404(quiz_id: int) -> Quiz:
+    """現在セッションの所有 Quiz を取得（他人のは 404）"""
+    sid = current_sid()
+    qz = Quiz.query.filter_by(id=quiz_id, session_id=sid).first()
+    if not qz:
+        abort(404)
+    return qz
+
+
 @bp.post("/quiz/<int:quiz_id>/delete")
 @login_required
 def quiz_delete(quiz_id: int):
-    quiz = Quiz.query.get_or_404(quiz_id)
+    quiz = _get_own_quiz_or_404(quiz_id)
     title = quiz.title
     db.session.delete(quiz)  # 子は cascade で削除
     db.session.commit()
@@ -142,7 +160,7 @@ def quiz_delete(quiz_id: int):
 @login_required
 def quiz_edit(quiz_id: int):
     """※ この関数は1つだけにする（重複定義禁止）"""
-    quiz = Quiz.query.get_or_404(quiz_id)
+    quiz = _get_own_quiz_or_404(quiz_id)
 
     if request.method == "POST":
         # 基本情報
@@ -189,12 +207,17 @@ def quiz_edit(quiz_id: int):
     return render_template("admin/quiz_edit.html", quiz=quiz)
 
 
-# ------------ 質問・選択肢 ------------
+# ------------ 質問・選択肢（セッションで分離） ------------
+
+def _ensure_question_belongs_to_me(q: Question) -> None:
+    if not q or not q.quiz or q.quiz.session_id != current_sid():
+        abort(404)
+
 
 @bp.route("/quiz/<int:quiz_id>/questions", methods=["GET", "POST"])
 @login_required
 def questions(quiz_id: int):
-    quiz = Quiz.query.get_or_404(quiz_id)
+    quiz = _get_own_quiz_or_404(quiz_id)
     if request.method == "POST":
         text = request.form.get("text", "").strip()
         if text:
@@ -213,6 +236,7 @@ def questions(quiz_id: int):
 @login_required
 def question_edit(question_id: int):
     q = Question.query.get_or_404(question_id)
+    _ensure_question_belongs_to_me(q)
     if request.method == "POST":
         q.text = request.form.get("text", q.text).strip()
         q.multiple = request.form.get("multiple") == "1"
@@ -225,6 +249,7 @@ def question_edit(question_id: int):
 @login_required
 def question_delete(question_id: int):
     q = Question.query.get_or_404(question_id)
+    _ensure_question_belongs_to_me(q)
     quiz_id = q.quiz_id
     db.session.delete(q)
     db.session.commit()
@@ -236,6 +261,7 @@ def question_delete(question_id: int):
 @login_required
 def question_move(question_id: int, direction: str):
     q = Question.query.get_or_404(question_id)
+    _ensure_question_belongs_to_me(q)
     quiz = q.quiz
     qs = sorted(quiz.questions, key=lambda x: (x.order or 0, x.id))
     for idx, item in enumerate(qs):
@@ -260,6 +286,7 @@ def question_move(question_id: int, direction: str):
 @login_required
 def choice_new(question_id: int):
     q = Question.query.get_or_404(question_id)
+    _ensure_question_belongs_to_me(q)
     text = request.form.get("text", "").strip()
     if text:
         ch = Choice(question=q, text=text)
@@ -279,6 +306,8 @@ def choice_new(question_id: int):
 @login_required
 def choice_delete(choice_id: int):
     ch = Choice.query.get_or_404(choice_id)
+    # 親質問の所有確認
+    _ensure_question_belongs_to_me(ch.question)
     qid = ch.question_id
     db.session.delete(ch)
     db.session.commit()
@@ -290,6 +319,8 @@ def choice_delete(choice_id: int):
 @login_required
 def choice_score_update(choice_id: int):
     ch = Choice.query.get_or_404(choice_id)
+    _ensure_question_belongs_to_me(ch.question)
+
     new_text = request.form.get("text")
     if new_text is not None and new_text.strip():
         ch.text = new_text.strip()
@@ -302,12 +333,17 @@ def choice_score_update(choice_id: int):
     return redirect(url_for("admin.question_edit", question_id=ch.question_id))
 
 
-# ------------ 結果 ------------
+# ------------ 結果（セッションで分離） ------------
+
+def _ensure_result_belongs_to_me(r: Result) -> None:
+    if not r or not r.quiz or r.quiz.session_id != current_sid():
+        abort(404)
+
 
 @bp.route("/quiz/<int:quiz_id>/results", methods=["GET", "POST"])
 @login_required
 def results(quiz_id: int):
-    quiz = Quiz.query.get_or_404(quiz_id)
+    quiz = _get_own_quiz_or_404(quiz_id)
     if request.method == "POST":
         title = request.form.get("title", "").strip()
         description = request.form.get("description", "").strip()
@@ -348,21 +384,23 @@ def results(quiz_id: int):
 @login_required
 def result_delete(result_id: int):
     r = Result.query.get_or_404(result_id)
+    _ensure_result_belongs_to_me(r)
     qid = r.quiz_id
     db.session.delete(r)
     db.session.commit()
     flash("削除しました。", "success")
     return redirect(url_for("admin.results", quiz_id=qid))
 
+
 @bp.post("/result/<int:result_id>/update")
 @login_required
 def result_update(result_id: int):
     r = Result.query.get_or_404(result_id)
+    _ensure_result_belongs_to_me(r)
 
     title = (request.form.get("title") or "").strip()
     description = (request.form.get("description") or "").strip()
 
-    # 空欄は None（無制限）扱い
     min_raw = request.form.get("min_total", "").strip()
     max_raw = request.form.get("max_total", "").strip()
     try:
@@ -386,4 +424,3 @@ def result_update(result_id: int):
     db.session.commit()
     flash("結果を更新しました。", "success")
     return redirect(url_for("admin.results", quiz_id=r.quiz_id))
-

@@ -19,13 +19,15 @@ class User(db.Model):
 # ---------- Quiz Domain ----------
 class Quiz(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    # セッションごとにデータを分離するための識別子（ログイン不要モード）
+    session_id = db.Column(db.String(64), index=True, nullable=True)
+
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, default="")
     display_mode = db.Column(db.String(20), nullable=False, default="ordered")
     choice_mode = db.Column(db.String(20), nullable=False, default="ordered")
 
     image_url = db.Column(db.String(500), nullable=True)
-
     choice_style = db.Column(db.String(20), nullable=False, default="normal")
 
     traits = db.relationship("Trait", backref="quiz", cascade="all, delete-orphan")
@@ -51,7 +53,6 @@ class Question(db.Model):
         backref="question",
         cascade="all, delete-orphan",
     )
-
 
 class Choice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -79,7 +80,7 @@ class Result(db.Model):
     winning_trait_id = db.Column(db.Integer, db.ForeignKey("trait.id"), nullable=True)
     winning_trait = db.relationship("Trait")
 
-# ---------- Sum Scoring Helpers (restored) ----------
+# ---------- Sum Scoring Helpers ----------
 
 def sum_total(picked_choice_ids: List[int]) -> int:
     """Return single total by summing Choice.sum_points for given choice IDs."""
