@@ -1,170 +1,92 @@
 from __future__ import annotations
 
+from typing import Iterable
 from extensions import db
-from models import Choice, Question, Quiz, Result, User
+from models import Choice, Question, Quiz, Result
 
 
 # ============================================================
-# セッション単位で投入するデモ診断（カエル雑学ライト）
+# セッション専用：無難な8問デモ（カエル雑学ライト）
+#   - そのセッションにクイズが無ければ投入（既にあれば何もしない）
+#   - overwrite=True を渡すと、そのセッションの既存クイズを消してから投入
 # ============================================================
-def seed_demo_for_session(session_id: str) -> None:
-    """そのセッション専用のデモ診断を投入"""
-    title = f"カエル雑学ライト診断 🐸 ({session_id[:6]})"
-
-    # 同じセッションに既にデモがあればスキップ
-    old = Quiz.query.filter_by(session_id=session_id).first()
-    if old:
+def seed_demo_for_session(session_id: str, *, overwrite: bool = False) -> None:
+    if not session_id:
         return
 
+    if overwrite:
+        _delete_quizzes_for_session(session_id)
+
+    # 既存が1件でもあればスキップ（重複投入しない）
+    if Quiz.query.filter_by(session_id=session_id).first():
+        return
+
+    title = "カエル雑学ライト診断"
     quiz = Quiz(
         title=title,
-        description="カエルに関するライトなクイズ。あなたの知識を気軽に試してみよう！",
+        description="カエルに関するやさしい8問のミニ診断です（体験用）。",
         display_mode="ordered",
         choice_mode="ordered",
         session_id=session_id,
     )
     db.session.add(quiz)
-    db.session.flush()
+    db.session.flush()  # quiz.id を確定
 
-    order = 0
+    def add_q(order: int, text: str, options: Iterable[tuple[str, int]]):
+        q = Question(quiz=quiz, text=text, order=order, multiple=False)
+        db.session.add(q)
+        db.session.flush()
+        db.session.add_all([Choice(question=q, text=opt, sum_points=pt) for opt, pt in options])
 
-    # --- Q1 ---
-    q1 = Question(
+    # ---- 8問（合計目安: 0〜20）----
+    add_q(1, "カエルはどの分類に属する？", [("両生類", 3), ("爬虫類", 0), ("魚類", 0)])
+    add_q(2, "皮膚がしっとりしている主な理由は？", [("水分保持のため", 2), ("保温のため", 1), ("体色を変えるためだけ", 0)])
+    add_q(3, "多くのカエルの産卵場所は？", [("水辺", 2), ("地中深く", 0), ("木の上だけ", 1)])
+    add_q(4, "春先の鳴き声の主目的は？", [("繁殖行動（なわばり・アピール）", 3), ("捕食者への威嚇", 1), ("人間への合図", 0)])
+    add_q(5, "オタマジャクシから成体になる変化は？", [("変態", 3), ("変身", 1), ("脱皮", 0)])
+    add_q(6, "前足と後ろ足、跳躍に強いのは？", [("後ろ足", 2), ("前足", 0), ("同じ", 1)])
+    add_q(7, "夜行性が多い理由に近いのは？", [("乾燥を避けやすい", 2), ("星を見るため", 0), ("昼は眠いから", 0)])
+    add_q(8, "生息に最も重要な環境要素は？", [("水と湿度", 3), ("高温", 0), ("強風", 0)])
+
+    # ---- 結果バンド ----
+    r_beginner = Result(
         quiz=quiz,
-        text="カエルは両生類？ 爬虫類？",
-        order=order,
-        multiple=False,
+        title="入門カエラー",
+        description="これからカエルの基本を知っていこう！観察のコツを学べば楽しさ倍増。",
+        min_total=-9999,
+        max_total=8,
     )
-    order += 1
-    db.session.add(q1)
-    db.session.flush()
-    db.session.add_all(
-        [
-            Choice(question=q1, text="両生類", sum_points=1),
-            Choice(question=q1, text="爬虫類", sum_points=0),
-        ]
-    )
-
-    # --- Q2 ---
-    q2 = Question(
+    r_normal = Result(
         quiz=quiz,
-        text="オタマジャクシが変態すると何になる？",
-        order=order,
-        multiple=False,
+        title="ふつうのカエラー",
+        description="身近な雑学はバッチリ。季節ごとの鳴き声や生態を調べるとさらに◎",
+        min_total=9,
+        max_total=15,
     )
-    order += 1
-    db.session.add(q2)
-    db.session.flush()
-    db.session.add_all(
-        [
-            Choice(question=q2, text="カエル", sum_points=1),
-            Choice(question=q2, text="ヘビ", sum_points=0),
-        ]
-    )
-
-    # ===== 結果 =====
-    r_good = Result(
+    r_master = Result(
         quiz=quiz,
-        title="カエル博士！",
-        description="あなたはカエルについてよく知っています。",
-        min_total=2,
+        title="上級カエラー",
+        description="観察力も知識も上級。地域差や種の特徴も押さえてフィールドへ！",
+        min_total=16,
         max_total=9999,
     )
-    r_bad = Result(
-        quiz=quiz,
-        title="まだまだこれから！",
-        description="これからカエル知識を学んでいきましょう。",
-        min_total=-9999,
-        max_total=1,
-    )
 
-    db.session.add_all([r_good, r_bad])
+    db.session.add_all([r_beginner, r_normal, r_master])
     db.session.commit()
-    print(f"[seed_demo] {title} を投入しました。")
+    print(f"[seed_demo] '{title}' を session={session_id} に投入しました。")
 
 
 # ============================================================
-# 既存の「推し度診断」
+# ユーティリティ：そのセッションのクイズを全削除（体験環境のリセット用）
 # ============================================================
-def seed_sm(db_uri_print: bool = False) -> None:
-    """あなたの推したい気持ちは本物？（性欲じゃないか？）チェック"""
-    if db_uri_print:
-        try:
-            print(f"[seed_sm] DB = {db.engine.url}")
-        except Exception:
-            pass
-
-    # 管理ユーザー作成（なければ）
-    if not User.query.filter_by(username="admin").first():
-        from werkzeug.security import generate_password_hash
-
-        admin = User(username="admin", password_hash=generate_password_hash("admin123"))
-        db.session.add(admin)
-        db.session.flush()
-
-    title = "あなたの推したい気持ちは本物？チェック（10問）"
-    old = Quiz.query.filter_by(title=title).first()
-    if old:
-        db.session.delete(old)
-        db.session.flush()
-
-    quiz = Quiz(
-        title=title,
-        description=(
-            "あなたが“推している”その気持ち、本当に心からの応援かしら？\n"
-            "もしかすると性欲や妄想に引っ張られているだけかも……。\n"
-            "この診断で、本物度を見極めてみましょう。"
-        ),
-    )
-    if hasattr(quiz, "display_mode"):
-        quiz.display_mode = "ordered"
-    db.session.add(quiz)
-    db.session.flush()
-
-    order = 0
-
-    # （中略：Q1〜Q10の処理は現行どおり）
-
-    # ===== 結果 =====
-    r_true = Result(
-        quiz=quiz,
-        title="本物の推し",
-        description=(
-            "あなたの気持ちは純粋な応援そのもの。"
-            "推しの努力や存在そのものを大切に思い、心から支えている証です。"
-            "その想いはきっと推しにも届いています。"
-        ),
-        min_total=31,
-        max_total=9999,
-    )
-    r_half = Result(
-        quiz=quiz,
-        title="曖昧（半分性欲）",
-        description=(
-            "あなたの推しへの想いには確かに応援の気持ちがあります。"
-            "しかし同時に、欲望や妄想も混ざり込んでいるようです。"
-            "応援と欲望、そのバランスをどう扱うかが課題かもしれません。"
-        ),
-        min_total=20,
-        max_total=30,
-    )
-    r_false = Result(
-        quiz=quiz,
-        title="不純（ただの性欲）",
-        description=(
-            "残念ながら、あなたの推したい気持ちは純粋とは言えないようです。"
-            "性的欲望が中心となっており、本来の応援とはかけ離れています。"
-            "推しを尊重する気持ちを意識できれば、新しい形の推し活が見えるはず。"
-        ),
-        min_total=-9999,
-        max_total=19,
-    )
-
-    db.session.add_all([r_true, r_half, r_false])
-    db.session.commit()
-    print("[seed_sm] あなたの推したい気持ちは本物？チェックを投入しました。")
-
-
-# 直接実行用
-if __name__ == "__main__":
-    seed_sm(db_uri_print=True)
+def _delete_quizzes_for_session(session_id: str) -> int:
+    if not session_id:
+        return 0
+    qs = Quiz.query.filter_by(session_id=session_id).all()
+    deleted = 0
+    for q in qs:
+        db.session.delete(q)  # cascadeで子要素も削除
+        deleted += 1
+    if deleted:
+        db.session.commit()
+    return deleted
