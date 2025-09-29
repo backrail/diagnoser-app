@@ -8,12 +8,11 @@
   <div class="card">
     
     <div class="thumb" style="margin-bottom:.75rem">
-    {% if qz.image_url %}
-      <img src="{{ qz.image_url }}" alt="{{ qz.title }}"
-           style="width:100%;max-height:180px;object-fit:cover;border-radius:16px;">
-    {% else %}
-      {% endif %}
+      <img src="{{ qz.image_url or url_for('static', filename='img/sample_quiz.jpg') }}"
+          alt="{{ qz.title }}"
+          style="width:100%;max-height:180px;object-fit:cover;border-radius:16px;">
     </div>
+
     <h3>{{ qz.title }}</h3>
     
     <p class="card-description">{{ qz.description }}</p>
