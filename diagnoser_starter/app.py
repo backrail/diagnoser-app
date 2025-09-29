@@ -16,7 +16,14 @@ from blueprints.public.routes import bp as public_bp
 def create_app() -> Flask:
     load_dotenv()
 
-    app = Flask(__name__, template_folder="templates", static_folder="static")
+    # ← 追加：app.py と同じディレクトリを基準に絶対パスを作る
+    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+    app = Flask(
+        __name__,
+        template_folder=os.path.join(BASE_DIR, "templates"),
+        static_folder=os.path.join(BASE_DIR, "static"),
+    )
     app.config.from_object(Config)
 
     # --- DB 初期化 ---
