@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{% block title %}診断アプリ{% endblock %}</title>
 
-  <!-- 初期テーマ（ローカルストレージ）をCSS読み込み前に反映してFOUC回避 -->
   <script>
     (function () {
       try {
@@ -17,6 +16,11 @@
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}?v=5">
   {% block head %}{% endblock %}
+
+  <!-- ★ 追加: 著作者メタ -->
+  <meta name="author" content="{{ site_owner }}">
+  <meta name="copyright" content="{{ copyright_notice }}">
+
   <meta name="theme-color" content="#090816">
 </head>
 <body class="theme-nocturne">
@@ -45,13 +49,11 @@
 
   <footer class="site-footer">
     <div class="container">
-      <small>© {{ current_year }} Nocturne Diagnostics</small>
+      <!-- ★ 置き換え: 動的な著作表示 -->
+      <small>{{ copyright_notice }}</small>
       <div class="sep"></div>
       <small class="muted">テーマ:</small>
-
-      <!-- ▼ テーマ切替パレット（右端） -->
       <div class="theme-dots" aria-label="テーマカラーの選択">
-        <!-- data-theme の値： violet / rose / emerald / amber / cyan -->
         <button class="theme-dot t-violet"  data-theme="violet"  title="バイオレット"></button>
         <button class="theme-dot t-rose"    data-theme="rose"    title="ローズ"></button>
         <button class="theme-dot t-emerald" data-theme="emerald" title="エメラルド"></button>
